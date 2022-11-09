@@ -19,8 +19,15 @@ def create_tables(cursor):
     # Creates table
     # Must set Title to CHARSET utf8 unicode Source: http://mysql.rjweb.org/doc.php/charcoll.
     # Python is in latin-1 and error (Incorrect string value: '\xE2\x80\xAFAbi...') will occur if Description is not in unicode format due to the json data
-    cursor.execute('''CREATE TABLE IF NOT EXISTS jobs (id INT PRIMARY KEY auto_increment, Job_id varchar(50) , 
-    company varchar (300), Created_at DATE, url varchar(30000), Title LONGBLOB, Description LONGBLOB ); ''')
+ cursor.execute('''CREATE TABLE IF NOT EXISTS Jobs (ID INT PRIMARY KEY auto_increment, 
+    Type varchar(10), 
+    Title varchar(100), 
+    Description text CHARSET utf8,
+    Job_id varchar(36), 
+    Created_at DATE, 
+    Company varchar(100), 
+    Location varchar(100), 
+    How_to_apply varchar(1000)); ''')
 
 
 # Query the database.
@@ -44,13 +51,17 @@ def add_new_job(cursor, jobdetails):
 # Check if new job
 def check_if_job_exists(cursor, jobdetails):
     ##Add your code here
-    query = "UPDATE"
+    query = "SELECT"
+    job_id = jobdetails['id']
+    query = "SELECT * FROM Jobs WHERE Job_id = \"%s\"" % job_id
     return query_sql(cursor, query)
 
 # Deletes job
 def delete_job(cursor, jobdetails):
     ##Add your code here
     query = "UPDATE"
+    job_id = jobdetails['id']
+    query = "DELETE FROM Jobs WHERE Job_id = \"%s\"" % job_id
     return query_sql(cursor, query)
 
 
@@ -78,14 +89,24 @@ def add_or_delete_job(jobpage, cursor):
         check_if_job_exists(cursor, jobdetails)
         is_job_found = len(
         cursor.fetchall()) > 0  # https://stackoverflow.com/questions/2511679/python-number-of-rows-affected-by-cursor-executeselect
-        if is_job_found:
+        now = datetime.now()
+        job_date = datetime.strptime(jobdetails['created_at'], "%a %b %d %H:%M:%S %Z %Y")
+        if (now - job_date).days > 30:
+                print("Delete job: " +
+                      jobdetails["title"] +
+                      " from " + jobdetails["company"] +
+                      ", Created at: " + jobdetails["created_at"] +
+                      ", JobID: " + jobdetails['id'])
+                delete_job(cursor, jobdetails)
 
         else:
-            # INSERT JOB
-            # Add in your code here to notify the user of a new posting. This code will notify the new user
-
-
-
+             print("New job is found: " +
+                  jobdetails["title"] +
+                  " from " + jobdetails["company"] +
+                  ", Created at: " + jobdetails["created_at"] +
+                  ", JobID: " + jobdetails['id'])
+        add_new_job(cursor, jobdetails)
+            
 # Setup portion of the program. Take arguments and set up the script
 # You should not need to edit anything here.
 def main():
